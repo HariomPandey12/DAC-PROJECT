@@ -50,12 +50,36 @@ class AdminController {
     try {
       const { role, is_active } = req.body;
 
+      // Prevent admin from disabling their own profile
+      if (req.user.user_id === parseInt(req.params.id) && is_active === false) {
+        return next(new AppError("You cannot disable your own profile", 400));
+      }
+
       // Only allow updating role and active status
-      const allowedUpdates = { role, is_active };
+      const allowedUpdates = {};
+      if (typeof role !== "undefined") allowedUpdates.role = role;
+      if (typeof is_active !== "undefined")
+        allowedUpdates.is_active = is_active;
+
+      // Build update query dynamically
+      const fields = [];
+      const values = [];
+      if (allowedUpdates.role !== undefined) {
+        fields.push("role = ?");
+        values.push(allowedUpdates.role);
+      }
+      if (allowedUpdates.is_active !== undefined) {
+        fields.push("is_active = ?");
+        values.push(allowedUpdates.is_active);
+      }
+      if (fields.length === 0) {
+        return next(new AppError("No valid fields to update", 400));
+      }
+      values.push(req.params.id);
 
       await db.query(
-        "UPDATE users SET role = ?, is_active = ? WHERE user_id = ?",
-        [allowedUpdates.role, allowedUpdates.is_active, req.params.id]
+        `UPDATE users SET ${fields.join(", ")} WHERE user_id = ?`,
+        values
       );
 
       const [rows] = await db.query(
@@ -623,12 +647,16 @@ class AdminController {
 
   static async deleteUser(req, res, next) {
     try {
+      // Prevent admin from deleting their own profile
+      if (req.user.user_id === parseInt(req.params.id)) {
+        return next(new AppError("You cannot delete your own profile", 400));
+      }
+
       // Check if user exists
       const [user] = await db.query(
         "SELECT user_id, role FROM users WHERE user_id = ?",
         [req.params.id]
       );
-
       if (!user.length) {
         return next(new AppError("No user found with that ID", 404));
       }
@@ -643,13 +671,97 @@ class AdminController {
         }
       }
 
-      // Delete the user
-      await db.query("DELETE FROM users WHERE user_id = ?", [req.params.id]);
+      await db.query("START TRANSACTION");
+      try {
+        // If user is organizer, delete all their events and related data
+        if (user[0].role === "organizer") {
+          // Get all event IDs for this organizer
+          const [events] = await db.query(
+            "SELECT event_id FROM events WHERE organizer_id = ?",
+            [req.params.id]
+          );
+          const eventIds = events.map((e) => e.event_id);
 
-      res.status(204).json({
-        status: "success",
-        data: null,
-      });
+          for (const eventId of eventIds) {
+            // Delete bookings and related data for this event
+            const [eventBookings] = await db.query(
+              "SELECT booking_id FROM bookings WHERE event_id = ?",
+              [eventId]
+            );
+            const bookingIds = eventBookings.map((b) => b.booking_id);
+
+            if (bookingIds.length > 0) {
+              await db.query("DELETE FROM payments WHERE booking_id IN (?)", [
+                bookingIds,
+              ]);
+              await db.query(
+                "DELETE FROM booked_seats WHERE booking_id IN (?)",
+                [bookingIds]
+              );
+              await db.query("DELETE FROM bookings WHERE booking_id IN (?)", [
+                bookingIds,
+              ]);
+            }
+
+            // Delete wishlists for this event
+            await db.query("DELETE FROM wishlists WHERE event_id = ?", [
+              eventId,
+            ]);
+            // Delete event images
+            await db.query("DELETE FROM event_images WHERE event_id = ?", [
+              eventId,
+            ]);
+            // Delete seats for this event
+            await db.query("DELETE FROM seats WHERE event_id = ?", [eventId]);
+            // Delete the event itself
+            await db.query("DELETE FROM events WHERE event_id = ?", [eventId]);
+          }
+        }
+
+        // Delete all bookings/payments/booked seats for the user
+        const [userBookings] = await db.query(
+          "SELECT booking_id FROM bookings WHERE user_id = ?",
+          [req.params.id]
+        );
+        const userBookingIds = userBookings.map((b) => b.booking_id);
+
+        if (userBookingIds.length > 0) {
+          await db.query("DELETE FROM payments WHERE booking_id IN (?)", [
+            userBookingIds,
+          ]);
+          await db.query("DELETE FROM booked_seats WHERE booking_id IN (?)", [
+            userBookingIds,
+          ]);
+          await db.query("DELETE FROM bookings WHERE booking_id IN (?)", [
+            userBookingIds,
+          ]);
+        }
+
+        // Delete wishlists for this user
+        await db.query("DELETE FROM wishlists WHERE user_id = ?", [
+          req.params.id,
+        ]);
+        // Delete refresh tokens for this user
+        await db.query("DELETE FROM refresh_tokens WHERE user_id = ?", [
+          req.params.id,
+        ]);
+        // Delete the user
+        await db.query("DELETE FROM users WHERE user_id = ?", [req.params.id]);
+
+        await db.query("COMMIT");
+        res.status(204).json({
+          status: "success",
+          data: null,
+        });
+      } catch (err) {
+        await db.query("ROLLBACK");
+        next(
+          new AppError(
+            "Failed to delete user and related data: " + (err.message || ""),
+            500
+          )
+        );
+      }
     } catch (err) {
       next(err);
     }
