@@ -334,32 +334,21 @@ class AdminController {
         "SELECT COUNT(*) as count FROM bookings WHERE status = 'confirmed'"
       );
 
-      // Get total revenue with proper NULL handling
+      // Get total revenue with proper NULL handling and status check
       const [revenueResult] = await db.query(
-        `SELECT COALESCE(SUM(amount), 0) as total 
-         FROM payments 
-         WHERE payment_status = 'captured'`
+        `SELECT COALESCE(SUM(b.total_amount), 0) as total 
+         FROM bookings b
+         WHERE b.status = 'confirmed'`
       );
 
-      // Get recent bookings
+      // Get recent bookings - only show confirmed bookings
       const [recentBookings] = await db.query(
         `SELECT b.*, e.title as event_title, u.name as user_name 
          FROM bookings b
          JOIN events e ON b.event_id = e.event_id
          JOIN users u ON b.user_id = u.user_id
+         WHERE b.status = 'confirmed'
          ORDER BY b.created_at DESC
-         LIMIT 5`
-      );
-
-      // Get popular events (most booked)
-      const [popularEvents] = await db.query(
-        `SELECT e.*, COUNT(b.booking_id) as booking_count,
-                COUNT(DISTINCT w.wishlist_id) as wishlist_count
-         FROM events e
-         LEFT JOIN bookings b ON e.event_id = b.event_id
-         LEFT JOIN wishlists w ON e.event_id = w.event_id
-         GROUP BY e.event_id
-         ORDER BY booking_count DESC
          LIMIT 5`
       );
 
@@ -373,7 +362,6 @@ class AdminController {
             revenue: revenueResult[0].total,
           },
           recentBookings,
-          popularEvents,
         },
       });
     } catch (err) {
