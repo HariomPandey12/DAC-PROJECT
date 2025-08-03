@@ -6,6 +6,7 @@ import SearchFilters from "../../components/events/SearchFilters";
 
 export default function EventsListPage() {
   const [events, setEvents] = useState([]);
+  const [categories, setCategories] = useState([]); // Add categories state
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [hasMore, setHasMore] = useState(true);
@@ -35,6 +36,18 @@ export default function EventsListPage() {
     },
     [loading, hasMore]
   );
+
+  // Add function to fetch categories
+  const fetchCategories = async () => {
+    try {
+      const response = await api.get("/categories");
+      if (response.data && response.data.data) {
+        setCategories(response.data.data.categories);
+      }
+    } catch (err) {
+      console.error("Error fetching categories:", err);
+    }
+  };
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -93,6 +106,11 @@ export default function EventsListPage() {
     fetchEvents();
   }, [filters]);
 
+  // Add useEffect for categories
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
   const handleSearch = (newFilters) => {
     console.log("Applying new filters:", newFilters);
     setEvents([]); // Clear existing events
@@ -106,7 +124,10 @@ export default function EventsListPage() {
         Discover and book amazing events happening around you
       </p>
 
-      <SearchFilters onSearch={handleSearch} />
+      <SearchFilters
+        onSearch={handleSearch}
+        categories={categories} // Pass categories to SearchFilters
+      />
 
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 relative">
