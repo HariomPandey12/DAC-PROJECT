@@ -310,16 +310,18 @@ export default function EditEventPage() {
               className="block text-sm font-medium text-gray-700 mb-1"
             >
               Total Seats *
+              <span className="ml-1 text-xs text-gray-500">
+                (Cannot be modified after creation)
+              </span>
             </label>
             <input
               type="number"
               id="total_seats"
               name="total_seats"
               value={formData.total_seats}
-              onChange={handleChange}
-              required
-              min="1"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              disabled
+              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
+              title="Total seats cannot be modified after event creation"
             />
           </div>
 
