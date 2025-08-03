@@ -109,7 +109,8 @@ export default function ForgotPassword() {
               {loading ? "Sending..." : "Generate Reset Link"}
             </button>
 
-            <button
+            {/* Enable for later implementation */}
+            {/* <button
               type="button"
               onClick={() => {
                 // TODO: Implement email sending functionality
@@ -118,7 +119,7 @@ export default function ForgotPassword() {
               className="flex-1 group relative flex justify-center py-2 px-4 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
               Send Email Later
-            </button>
+            </button> */}
           </div>
 
           <div className="text-center">
