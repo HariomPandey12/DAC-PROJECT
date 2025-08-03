@@ -754,6 +754,72 @@ class AdminController {
       next(err);
     }
   }
+
+  static async deleteEvent(req, res, next) {
+    try {
+      const eventId = req.params.id;
+
+      // Start transaction
+      await db.query("START TRANSACTION");
+      try {
+        // Check if event exists
+        const [event] = await db.query(
+          "SELECT event_id FROM events WHERE event_id = ?",
+          [eventId]
+        );
+
+        if (!event.length) {
+          await db.query("ROLLBACK");
+          return next(new AppError("No event found with that ID", 404));
+        }
+
+        // Delete related bookings and payments
+        const [bookings] = await db.query(
+          "SELECT booking_id FROM bookings WHERE event_id = ?",
+          [eventId]
+        );
+
+        if (bookings.length > 0) {
+          const bookingIds = bookings.map((b) => b.booking_id);
+          await db.query("DELETE FROM payments WHERE booking_id IN (?)", [
+            bookingIds,
+          ]);
+          await db.query("DELETE FROM booked_seats WHERE booking_id IN (?)", [
+            bookingIds,
+          ]);
+          await db.query("DELETE FROM bookings WHERE booking_id IN (?)", [
+            bookingIds,
+          ]);
+        }
+
+        // Delete wishlists for this event
+        await db.query("DELETE FROM wishlists WHERE event_id = ?", [eventId]);
+
+        // Delete event images
+        await db.query("DELETE FROM event_images WHERE event_id = ?", [
+          eventId,
+        ]);
+
+        // Delete seats
+        await db.query("DELETE FROM seats WHERE event_id = ?", [eventId]);
+
+        // Finally delete the event
+        await db.query("DELETE FROM events WHERE event_id = ?", [eventId]);
+
+        await db.query("COMMIT");
+
+        res.status(204).json({
+          status: "success",
+          data: null,
+        });
+      } catch (err) {
+        await db.query("ROLLBACK");
+        throw err;
+      }
+    } catch (err) {
+      next(err);
+    }
+  }
 }
 
 module.exports = AdminController;

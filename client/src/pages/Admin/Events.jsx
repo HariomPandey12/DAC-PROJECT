@@ -34,6 +34,30 @@ export default function Events() {
     }
   };
 
+  const handleDelete = async (eventId) => {
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this event? This will delete all related bookings, seats, and other data."
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await api.delete(`/admin/events/${eventId}`);
+      toast.success("Event deleted successfully!");
+      fetchEvents(); // Refresh the events list
+    } catch (err) {
+      console.error("Delete error:", err);
+      const errorMessage =
+        err.response?.data?.message || "Failed to delete event";
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -144,6 +168,12 @@ export default function Events() {
                   >
                     View
                   </a>
+                  <button
+                    onClick={() => handleDelete(event.event_id)}
+                    className="text-red-600 hover:text-red-900 transition"
+                  >
+                    Delete
+                  </button>
                 </td>
               </tr>
             ))}
