@@ -8,7 +8,7 @@ TRUNCATE TABLE event_images;
 TRUNCATE TABLE payments;
 TRUNCATE TABLE booked_seats;
 TRUNCATE TABLE seats;
-TRUNCATE TABLE bookings;
+TRUNCATE TABLE bookin
 TRUNCATE TABLE events;
 TRUNCATE TABLE categories;
 TRUNCATE TABLE refresh_tokens;
