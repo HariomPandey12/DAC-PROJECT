@@ -163,23 +163,24 @@ export default function SearchFilters({ onSearch, categories }) {
             className="w-full px-3 py-2 border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-indigo-500"
           />
         </div>
-      </form>
 
-      <div className="flex flex-col md:flex-row justify-end items-stretch md:items-center gap-3 pt-4">
-        <button
-          type="button"
-          onClick={handleReset}
-          className="px-4 py-2 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 bg-white hover:bg-gray-100 transition"
-        >
-          Reset
-        </button>
-        <button
-          type="submit"
-          className="px-4 py-2 rounded-xl text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition"
-        >
-          Apply Filters
-        </button>
-      </div>
+        {/* Submit & Reset buttons inside the form */}
+        <div className="col-span-full flex flex-col md:flex-row justify-end items-stretch md:items-center gap-3 pt-4">
+          <button
+            type="button"
+            onClick={handleReset}
+            className="px-4 py-2 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 bg-white hover:bg-gray-100 transition"
+          >
+            Reset
+          </button>
+          <button
+            type="submit"
+            className="px-4 py-2 rounded-xl text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 shadow-md transition"
+          >
+            Apply Filters
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
