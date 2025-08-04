@@ -19,11 +19,14 @@ export default function ForgotPassword() {
       console.log("Forgot password response:", response.data);
 
       if (response.data.resetURL) {
-        // For development, show the reset URL
-        setSuccess(
-          `Password reset link has been generated. For development, you can use this link: ${response.data.resetURL}`
-        );
-      } else {
+        setSuccess("RESET_LINK::" + response.data.resetURL);
+      }
+      // if (response.data.resetURL) {
+      //   // For development, show the reset URL
+      //   setSuccess(
+      //     `Password reset link has been generated. For development, you can use this link: ${response.data.resetURL}`
+      //   );
+      else {
         setSuccess("Password reset link has been sent to your email address.");
       }
     } catch (err) {
@@ -61,21 +64,21 @@ export default function ForgotPassword() {
 
         {success && (
           <div
-            className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative"
+            className="bg-blue-50 border border-blue-400 text-blue-700 px-4 py-4 rounded shadow-md"
             role="alert"
           >
-            <span className="block sm:inline">{success}</span>
-            {success.includes("reset link has been generated") && (
-              <div className="mt-2">
-                <a
-                  href={success.split("link: ")[1]}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-800 underline"
-                >
-                  Click here to reset your password
-                </a>
-              </div>
+            <p className="font-semibold mb-1">Reset link generated:</p>
+            {success.startsWith("RESET_LINK::") ? (
+              <a
+                href={success.replace("RESET_LINK::", "")}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-indigo-600 hover:text-indigo-800 underline"
+              >
+                Click here to reset your password
+              </a>
+            ) : (
+              <span>{success}</span>
             )}
           </div>
         )}
