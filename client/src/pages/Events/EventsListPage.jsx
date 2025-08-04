@@ -8,6 +8,7 @@ import api from "../../services/api";
 // Custom components
 import EventCard from "../../components/events/EventCard";
 import SearchFilters from "../../components/events/SearchFilters";
+import LoginPrompt from "../../components/common/LoginPrompt";
 
 // Main component for listing events
 export default function EventsListPage() {
@@ -21,6 +22,7 @@ export default function EventsListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [hasMore, setHasMore] = useState(true); // Controls infinite scroll
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false); // Controls login prompt visibility
 
   // Filters for fetching events based on user input
   const [filters, setFilters] = useState({
@@ -168,10 +170,19 @@ export default function EventsListPage() {
             ref={index === events.length - 1 ? lastEventElementRef : null}
             className="transform hover:scale-[1.02] transition-transform duration-200"
           >
-            <EventCard event={event} />
+            <EventCard
+              event={event}
+              onLoginRequired={() => setShowLoginPrompt(true)}
+            />
           </div>
         ))}
       </div>
+
+      {/* Login Prompt Modal */}
+      <LoginPrompt
+        isOpen={showLoginPrompt}
+        onClose={() => setShowLoginPrompt(false)}
+      />
 
       {/* Loading spinner */}
       {loading && (
